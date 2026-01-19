@@ -113,7 +113,8 @@ def get_vulnerabilities(preset: VulnerabilityPreset):
             ShellInjection(),
             SQLInjection(),
             # Data exfiltration (maps to EXTERNAL_EXFILTRATION, CREDENTIAL_ACCESS)
-            PIILeakage(types=["api_key", "password", "ssh_key", "credit_card"]),
+            # Available types: api_and_database_access, direct_disclosure, session_leak, social_manipulation
+            PIILeakage(types=["api_and_database_access", "direct_disclosure"]),
             PromptLeakage(),
             SSRF(),
             # Agentic risks (maps to MULTI_STEP_ATTACK)
@@ -125,7 +126,7 @@ def get_vulnerabilities(preset: VulnerabilityPreset):
         # Security
         ShellInjection(),
         SQLInjection(),
-        PIILeakage(types=["api_key", "password", "ssh_key", "credit_card", "email", "phone"]),
+        PIILeakage(types=["api_and_database_access", "direct_disclosure", "session_leak", "social_manipulation"]),
         PromptLeakage(),
         SSRF(),
         ExcessiveAgency(),
