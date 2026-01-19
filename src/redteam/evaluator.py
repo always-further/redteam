@@ -218,24 +218,20 @@ class RedTeamEvaluator:
         vulnerabilities = get_vulnerabilities(self.config.preset)
         attacks = get_attacks(self.config)
 
-        # Run DeepTeam evaluation
+        # Determine which model to use for simulation/evaluation
         import os
 
-        # Determine which model to use for simulation/evaluation
         if self.config.simulator_model:
             # User specified a model explicitly
             simulator_model = self.config.simulator_model
             evaluation_model = self.config.simulator_model
-            print(f"[INFO] Using {simulator_model} for attack simulation and evaluation")
         elif os.environ.get("GOOGLE_API_KEY"):
             simulator_model = "gemini/gemini-1.5-flash"
             evaluation_model = "gemini/gemini-1.5-flash"
-            print("[INFO] Using Gemini for attack simulation and evaluation")
         elif os.environ.get("OPENAI_API_KEY"):
             # Use gpt-4o which supports json_schema response_format
             simulator_model = "gpt-4o"
             evaluation_model = "gpt-4o"
-            print("[INFO] Using OpenAI gpt-4o for attack simulation and evaluation")
         else:
             raise RuntimeError(
                 "No API key found for attack simulation. "
@@ -243,29 +239,59 @@ class RedTeamEvaluator:
                 "or specify --simulator-model explicitly."
             )
 
-        # Suppress DeepTeam's verbose output
-        import sys
-        import io
-
-        print("[INFO] Running DeepTeam evaluation (output suppressed)...")
-        old_stdout = sys.stdout
-        sys.stdout = io.StringIO()
-
+        # Validate simulator model API connection
+        print(f"[VALIDATE] Testing simulator model ({simulator_model})...")
         try:
-            risk_assessment = await asyncio.to_thread(
-                red_team,
-                model_callback=callback,
-                vulnerabilities=vulnerabilities,
-                attacks=attacks,
-                attacks_per_vulnerability_type=self.config.attacks_per_vulnerability,
-                max_concurrent=self.config.max_concurrent,
-                target_purpose=self.config.purpose,
-                simulator_model=simulator_model,
-                evaluation_model=evaluation_model,
-                async_mode=False,  # Use sync mode with sync callback
-            )
-        finally:
-            sys.stdout = old_stdout
+            import requests
+
+            if simulator_model.startswith("gemini/") or "gemini" in simulator_model:
+                # Google Gemini API
+                api_key = os.environ.get("GOOGLE_API_KEY")
+                if not api_key:
+                    raise RuntimeError("GOOGLE_API_KEY not set")
+                model_id = simulator_model.replace("gemini/", "")
+                resp = requests.post(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={api_key}",
+                    json={"contents": [{"parts": [{"text": "Say ok"}]}]},
+                    timeout=30,
+                )
+                resp.raise_for_status()
+                print("[VALIDATE] Simulator model OK (Gemini)")
+            else:
+                # OpenAI API (default)
+                api_key = os.environ.get("OPENAI_API_KEY")
+                if not api_key:
+                    raise RuntimeError("OPENAI_API_KEY not set")
+                resp = requests.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    json={
+                        "model": simulator_model,
+                        "messages": [{"role": "user", "content": "Say ok"}],
+                        "max_tokens": 5,
+                    },
+                    timeout=30,
+                )
+                resp.raise_for_status()
+                print("[VALIDATE] Simulator model OK (OpenAI)")
+        except Exception as e:
+            print(f"[VALIDATE FAILED] Simulator model error: {e}")
+            raise RuntimeError(f"Simulator model validation failed: {e}") from e
+
+        print("[INFO] Running DeepTeam evaluation...")
+
+        risk_assessment = await asyncio.to_thread(
+            red_team,
+            model_callback=callback,
+            vulnerabilities=vulnerabilities,
+            attacks=attacks,
+            attacks_per_vulnerability_type=self.config.attacks_per_vulnerability,
+            max_concurrent=self.config.max_concurrent,
+            target_purpose=self.config.purpose,
+            simulator_model=simulator_model,
+            evaluation_model=evaluation_model,
+            async_mode=False,  # Use sync mode with sync callback
+        )
 
         # Parse results
         result = EvaluationResult(
