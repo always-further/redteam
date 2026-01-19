@@ -205,11 +205,22 @@ class RedTeamEvaluator:
         # Use Gemini if GOOGLE_API_KEY is set, otherwise fall back to OpenAI
         import os
 
-        simulator_model = "gpt-4o-mini"
-        evaluation_model = "gpt-4o-mini"
+        # Determine which model to use for simulation/evaluation
+        # Priority: GOOGLE_API_KEY -> OPENAI_API_KEY
         if os.environ.get("GOOGLE_API_KEY"):
             simulator_model = "gemini/gemini-1.5-flash"
             evaluation_model = "gemini/gemini-1.5-flash"
+            print("[INFO] Using Gemini for attack simulation and evaluation")
+        elif os.environ.get("OPENAI_API_KEY"):
+            # Use gpt-3.5-turbo which is widely available
+            simulator_model = "gpt-3.5-turbo"
+            evaluation_model = "gpt-3.5-turbo"
+            print("[INFO] Using OpenAI gpt-3.5-turbo for attack simulation and evaluation")
+        else:
+            raise RuntimeError(
+                "No API key found for attack simulation. "
+                "Set OPENAI_API_KEY or GOOGLE_API_KEY environment variable."
+            )
 
         risk_assessment = await asyncio.to_thread(
             red_team,
