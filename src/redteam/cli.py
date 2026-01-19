@@ -47,6 +47,14 @@ def evaluate(
         bool,
         typer.Option("--no-multi-turn", help="Disable multi-turn attacks (faster)"),
     ] = False,
+    simulator_model: Annotated[
+        str | None,
+        typer.Option(
+            "--simulator-model",
+            "-m",
+            help="Model for attack simulation/evaluation (e.g., gpt-4o, gemini/gemini-1.5-flash)",
+        ),
+    ] = None,
 ) -> None:
     """Evaluate a single model with red team attacks."""
     printer = ReportPrinter()
@@ -63,6 +71,7 @@ def evaluate(
         attacks_per_vulnerability=attacks,
         purpose=purpose,
         enable_multi_turn=not no_multi_turn,
+        simulator_model=simulator_model,
     )
 
     evaluator = RedTeamEvaluator(config)
@@ -148,6 +157,14 @@ def compare(
         bool,
         typer.Option("--no-multi-turn", help="Disable multi-turn attacks (faster)"),
     ] = False,
+    simulator_model: Annotated[
+        str | None,
+        typer.Option(
+            "--simulator-model",
+            "-m",
+            help="Model for attack simulation/evaluation (e.g., gpt-4o, gemini/gemini-1.5-flash)",
+        ),
+    ] = None,
 ) -> None:
     """Compare base model vs Hedgehog-trained model."""
     printer = ReportPrinter()
@@ -164,6 +181,7 @@ def compare(
         attacks_per_vulnerability=attacks,
         purpose=purpose,
         enable_multi_turn=not no_multi_turn,
+        simulator_model=simulator_model,
     )
 
     evaluator = RedTeamEvaluator(config)

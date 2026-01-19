@@ -65,6 +65,11 @@ class EvaluationConfig:
     # Enable multi-turn attacks (slower but more thorough)
     enable_multi_turn: bool = True
 
+    # Simulator/evaluation model (for attack generation and scoring)
+    # Format: "provider/model" e.g. "openai/gpt-4o", "gemini/gemini-1.5-flash"
+    # If None, auto-detects from environment variables
+    simulator_model: str | None = None
+
 
 @dataclass
 class EvaluationResult:
@@ -214,24 +219,28 @@ class RedTeamEvaluator:
         attacks = get_attacks(self.config)
 
         # Run DeepTeam evaluation
-        # Use Gemini if GOOGLE_API_KEY is set, otherwise fall back to OpenAI
         import os
 
         # Determine which model to use for simulation/evaluation
-        # Priority: GOOGLE_API_KEY -> OPENAI_API_KEY
-        if os.environ.get("GOOGLE_API_KEY"):
+        if self.config.simulator_model:
+            # User specified a model explicitly
+            simulator_model = self.config.simulator_model
+            evaluation_model = self.config.simulator_model
+            print(f"[INFO] Using {simulator_model} for attack simulation and evaluation")
+        elif os.environ.get("GOOGLE_API_KEY"):
             simulator_model = "gemini/gemini-1.5-flash"
             evaluation_model = "gemini/gemini-1.5-flash"
             print("[INFO] Using Gemini for attack simulation and evaluation")
         elif os.environ.get("OPENAI_API_KEY"):
-            # Use gpt-4 which is available in most accounts
-            simulator_model = "gpt-4"
-            evaluation_model = "gpt-4"
-            print("[INFO] Using OpenAI gpt-4 for attack simulation and evaluation")
+            # Use gpt-4o which supports json_schema response_format
+            simulator_model = "gpt-4o"
+            evaluation_model = "gpt-4o"
+            print("[INFO] Using OpenAI gpt-4o for attack simulation and evaluation")
         else:
             raise RuntimeError(
                 "No API key found for attack simulation. "
-                "Set OPENAI_API_KEY or GOOGLE_API_KEY environment variable."
+                "Set OPENAI_API_KEY or GOOGLE_API_KEY environment variable, "
+                "or specify --simulator-model explicitly."
             )
 
         # Suppress DeepTeam's verbose output

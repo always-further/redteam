@@ -35,6 +35,10 @@ redteam compare Qwen/Qwen2.5-3B-Instruct outputs/dai-model-merged \
 redteam compare Qwen/Qwen2.5-3B-Instruct outputs/dai-model-merged \
     --preset full \
     --attacks 10
+
+# Specify the simulator model explicitly
+redteam compare Qwen/Qwen2.5-3B-Instruct outputs/dai-model-merged \
+    --simulator-model gpt-4o
 ```
 
 ### With Pre-Started vLLM Servers
@@ -171,4 +175,23 @@ Or configure via CLI:
 
 ```bash
 deepteam set-api-key sk-proj-abc123...
+```
+
+## Simulator Model
+
+By default, the tool auto-detects which API key is set and uses an appropriate model:
+- `GOOGLE_API_KEY` -> `gemini/gemini-1.5-flash`
+- `OPENAI_API_KEY` -> `gpt-4o`
+
+You can override this with `--simulator-model` (`-m`):
+
+```bash
+# Use a specific OpenAI model
+redteam evaluate outputs/model --simulator-model gpt-4o
+
+# Use Gemini
+redteam evaluate outputs/model --simulator-model gemini/gemini-1.5-flash
+
+# Use Claude (requires ANTHROPIC_API_KEY)
+redteam evaluate outputs/model --simulator-model claude-3-5-sonnet-20241022
 ```
