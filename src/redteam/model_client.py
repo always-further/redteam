@@ -215,27 +215,40 @@ class ModelServer:
 
 
 def create_model_callback(
-    client: VLLMClient,
+    base_url: str,
     max_tokens: int = 512,
     temperature: float = 0.7,
 ):
     """Create a DeepTeam-compatible model callback.
 
+    DeepTeam expects a sync or async callback. We use sync with requests
+    to avoid async complexities.
+
     Args:
-        client: VLLMClient instance
+        base_url: Base URL of vLLM server (e.g., http://localhost:8000)
         max_tokens: Maximum tokens to generate
         temperature: Sampling temperature
 
     Returns:
-        Async callback function for DeepTeam
+        Callback function for DeepTeam
     """
+    import requests
 
-    async def model_callback(input_text: str) -> str:
-        """DeepTeam model callback."""
-        return await client.generate(
-            prompt=input_text,
-            max_tokens=max_tokens,
-            temperature=temperature,
+    def model_callback(input_text: str) -> str:
+        """DeepTeam model callback (sync)."""
+        # Use chat completions endpoint for better compatibility
+        response = requests.post(
+            f"{base_url}/v1/chat/completions",
+            json={
+                "model": "default",
+                "messages": [{"role": "user", "content": input_text}],
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+            },
+            timeout=120,
         )
+        response.raise_for_status()
+        data = response.json()
+        return data["choices"][0]["message"]["content"]
 
     return model_callback

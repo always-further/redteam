@@ -193,7 +193,7 @@ class RedTeamEvaluator:
             EvaluationResult with all metrics
         """
         callback = create_model_callback(
-            client,
+            client.base_url,
             max_tokens=self.config.max_tokens,
             temperature=self.config.temperature,
         )
