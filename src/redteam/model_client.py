@@ -279,10 +279,9 @@ def create_model_callback(
             data = response.json()
             result = data["choices"][0]["message"]["content"]
 
-            # Log first few calls for debugging
-            if call_count[0] <= 3:
-                print(f"[CALLBACK #{call_count[0]}] Input: {input_text[:100]}...")
-                print(f"[CALLBACK #{call_count[0]}] Response: {result[:100]}...")
+            # Log call count periodically
+            if call_count[0] == 1:
+                print("[CALLBACK] First call received - model responding")
 
             return result
         except Exception as e:

@@ -243,6 +243,13 @@ class RedTeamEvaluator:
             config=self.config,
         )
 
+        # Check for errors in test cases
+        if hasattr(risk_assessment, "test_cases") and risk_assessment.test_cases:
+            errored = [tc for tc in risk_assessment.test_cases if hasattr(tc, "error") and tc.error]
+            if errored:
+                print(f"\n[WARNING] {len(errored)} of {len(risk_assessment.test_cases)} tests errored")
+                print(f"[ERROR SAMPLE] {errored[0].error[:200] if errored else 'N/A'}")
+
         # Access results via risk_assessment.overview.vulnerability_type_results
         if hasattr(risk_assessment, "overview") and risk_assessment.overview:
             for vuln_result in risk_assessment.overview.vulnerability_type_results:
