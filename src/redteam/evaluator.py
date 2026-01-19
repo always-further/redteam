@@ -221,6 +221,7 @@ class RedTeamEvaluator:
             target_purpose=self.config.purpose,
             simulator_model=simulator_model,
             evaluation_model=evaluation_model,
+            async_mode=False,  # Use sync mode with sync callback
         )
 
         # Parse results
