@@ -234,18 +234,29 @@ class RedTeamEvaluator:
                 "Set OPENAI_API_KEY or GOOGLE_API_KEY environment variable."
             )
 
-        risk_assessment = await asyncio.to_thread(
-            red_team,
-            model_callback=callback,
-            vulnerabilities=vulnerabilities,
-            attacks=attacks,
-            attacks_per_vulnerability_type=self.config.attacks_per_vulnerability,
-            max_concurrent=self.config.max_concurrent,
-            target_purpose=self.config.purpose,
-            simulator_model=simulator_model,
-            evaluation_model=evaluation_model,
-            async_mode=False,  # Use sync mode with sync callback
-        )
+        # Suppress DeepTeam's verbose output
+        import sys
+        import io
+
+        print("[INFO] Running DeepTeam evaluation (output suppressed)...")
+        old_stdout = sys.stdout
+        sys.stdout = io.StringIO()
+
+        try:
+            risk_assessment = await asyncio.to_thread(
+                red_team,
+                model_callback=callback,
+                vulnerabilities=vulnerabilities,
+                attacks=attacks,
+                attacks_per_vulnerability_type=self.config.attacks_per_vulnerability,
+                max_concurrent=self.config.max_concurrent,
+                target_purpose=self.config.purpose,
+                simulator_model=simulator_model,
+                evaluation_model=evaluation_model,
+                async_mode=False,  # Use sync mode with sync callback
+            )
+        finally:
+            sys.stdout = old_stdout
 
         # Parse results
         result = EvaluationResult(
