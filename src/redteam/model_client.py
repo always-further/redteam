@@ -234,13 +234,17 @@ def create_model_callback(
     """
     import requests
 
+    # Get the model name from vLLM once at callback creation time
+    models_response = requests.get(f"{base_url}/v1/models", timeout=10)
+    models_response.raise_for_status()
+    model_name = models_response.json()["data"][0]["id"]
+
     def model_callback(input_text: str) -> str:
         """DeepTeam model callback (sync)."""
-        # Use chat completions endpoint for better compatibility
         response = requests.post(
             f"{base_url}/v1/chat/completions",
             json={
-                "model": "default",
+                "model": model_name,
                 "messages": [{"role": "user", "content": input_text}],
                 "max_tokens": max_tokens,
                 "temperature": temperature,
