@@ -209,9 +209,9 @@ class RedTeamEvaluator:
             model_callback=callback,
             vulnerabilities=vulnerabilities,
             attacks=attacks,
-            attacks_per_vulnerability=self.config.attacks_per_vulnerability,
+            attacks_per_vulnerability_type=self.config.attacks_per_vulnerability,
             max_concurrent=self.config.max_concurrent,
-            purpose=self.config.purpose,
+            target_purpose=self.config.purpose,
         )
 
         # Parse results

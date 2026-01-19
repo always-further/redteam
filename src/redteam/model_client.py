@@ -144,7 +144,17 @@ class ModelServer:
         Raises:
             TimeoutError: If server doesn't start within timeout
             RuntimeError: If server fails to start
+            FileNotFoundError: If vllm is not installed
         """
+        # Check if vllm is available
+        import shutil
+
+        if shutil.which("vllm") is None:
+            raise FileNotFoundError(
+                "vllm command not found. Install it with: uv add vllm\n"
+                "Alternatively, start vLLM manually and use --vllm-url option."
+            )
+
         cmd = [
             "vllm",
             "serve",

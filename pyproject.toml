@@ -3,7 +3,7 @@ name = "redteam"
 version = "0.1.0"
 description = "Red team evaluation for Hedgehog-trained models using DeepTeam"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "deepteam>=1.0.0",
     "httpx>=0.27.0",
