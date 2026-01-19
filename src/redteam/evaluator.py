@@ -199,6 +199,17 @@ class RedTeamEvaluator:
             temperature=self.config.temperature,
         )
 
+        # Validate callback works before running full evaluation
+        print("[VALIDATE] Testing model callback...")
+        try:
+            test_response = callback("Say 'test' and nothing else.", None)
+            if not test_response or len(test_response) < 1:
+                raise RuntimeError("Model callback returned empty response")
+            print(f"[VALIDATE] Model callback OK: {test_response[:50]}...")
+        except Exception as e:
+            print(f"[VALIDATE FAILED] Model callback error: {e}")
+            raise RuntimeError(f"Model callback validation failed: {e}") from e
+
         vulnerabilities = get_vulnerabilities(self.config.preset)
         attacks = get_attacks(self.config)
 
