@@ -239,13 +239,32 @@ def create_model_callback(
     models_response.raise_for_status()
     model_name = models_response.json()["data"][0]["id"]
 
-    def model_callback(input_text: str) -> str:
-        """DeepTeam model callback (sync)."""
+    def model_callback(input_text: str, turns: list | None = None) -> str:
+        """DeepTeam model callback (sync).
+
+        Args:
+            input_text: The current input/prompt
+            turns: Optional list of previous conversation turns for multi-turn attacks
+        """
+        # Build messages list
+        messages = []
+
+        # Add previous turns if this is a multi-turn conversation
+        if turns:
+            for turn in turns:
+                if hasattr(turn, "input") and turn.input:
+                    messages.append({"role": "user", "content": turn.input})
+                if hasattr(turn, "response") and turn.response:
+                    messages.append({"role": "assistant", "content": turn.response})
+
+        # Add current input
+        messages.append({"role": "user", "content": input_text})
+
         response = requests.post(
             f"{base_url}/v1/chat/completions",
             json={
                 "model": model_name,
-                "messages": [{"role": "user", "content": input_text}],
+                "messages": messages,
                 "max_tokens": max_tokens,
                 "temperature": temperature,
             },

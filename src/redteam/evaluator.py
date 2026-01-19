@@ -231,6 +231,22 @@ class RedTeamEvaluator:
             config=self.config,
         )
 
+        # Debug: Print raw risk_assessment structure
+        print(f"\n[DEBUG] risk_assessment type: {type(risk_assessment)}")
+        print(f"[DEBUG] risk_assessment attributes: {dir(risk_assessment)}")
+        if hasattr(risk_assessment, "test_cases") and risk_assessment.test_cases:
+            print(f"[DEBUG] Number of test_cases: {len(risk_assessment.test_cases)}")
+            if risk_assessment.test_cases:
+                tc = risk_assessment.test_cases[0]
+                print(f"[DEBUG] First test_case type: {type(tc)}")
+                print(f"[DEBUG] First test_case attributes: {dir(tc)}")
+                print(f"[DEBUG] First test_case dict: {tc.__dict__ if hasattr(tc, '__dict__') else 'no __dict__'}")
+                # Check for error field
+                if hasattr(tc, "error"):
+                    print(f"[DEBUG] First test_case error: {tc.error}")
+                if hasattr(tc, "score"):
+                    print(f"[DEBUG] First test_case score: {tc.score}")
+
         # Access results via risk_assessment.overview.vulnerability_type_results
         if hasattr(risk_assessment, "overview") and risk_assessment.overview:
             for vuln_result in risk_assessment.overview.vulnerability_type_results:
