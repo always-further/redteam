@@ -1,0 +1,36 @@
+[project]
+name = "redteam"
+version = "0.1.0"
+description = "Red team evaluation for Hedgehog-trained models using DeepTeam"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "deepteam>=1.0.0",
+    "httpx>=0.27.0",
+    "rich>=13.0.0",
+    "typer>=0.12.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.4.0",
+    "pytest>=8.0.0",
+]
+
+[project.scripts]
+redteam = "redteam.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/redteam"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
