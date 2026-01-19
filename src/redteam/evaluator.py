@@ -230,32 +230,35 @@ class RedTeamEvaluator:
             config=self.config,
         )
 
-        for vuln_result in risk_assessment.vulnerability_scores:
-            vuln_name = vuln_result.vulnerability.__class__.__name__
-            passed = vuln_result.score == 1  # DeepTeam uses 1 for pass, 0 for fail
-            attacks_count = len(vuln_result.attack_results) if vuln_result.attack_results else 1
+        # Access results via risk_assessment.overview.vulnerability_type_results
+        if hasattr(risk_assessment, "overview") and risk_assessment.overview:
+            for vuln_result in risk_assessment.overview.vulnerability_type_results:
+                vuln_name = vuln_result.vulnerability
+                passing = vuln_result.passing
+                failing = vuln_result.failing
+                total = passing + failing
 
-            vr = VulnerabilityResult(
-                name=vuln_name,
-                attacks=attacks_count,
-                passed=attacks_count if passed else 0,
-                failed=0 if passed else attacks_count,
-            )
-            result.vulnerability_results.append(vr)
-            result.total_attacks += attacks_count
-            result.total_passed += vr.passed
-            result.total_failed += vr.failed
+                vr = VulnerabilityResult(
+                    name=vuln_name,
+                    attacks=total,
+                    passed=passing,
+                    failed=failing,
+                )
+                result.vulnerability_results.append(vr)
+                result.total_attacks += total
+                result.total_passed += passing
+                result.total_failed += failing
 
-            # Collect failed examples
-            if not passed and vuln_result.attack_results:
-                for attack_result in vuln_result.attack_results[:3]:  # Limit to 3 per vuln
-                    if attack_result.score == 0:
-                        result.failed_examples.append({
-                            "vulnerability": vuln_name,
-                            "attack_type": attack_result.attack.__class__.__name__,
-                            "input": attack_result.input[:500] if attack_result.input else "",
-                            "output": attack_result.output[:500] if attack_result.output else "",
-                        })
+        # Collect failed examples from test_cases
+        if hasattr(risk_assessment, "test_cases") and risk_assessment.test_cases:
+            for tc in risk_assessment.test_cases:
+                if tc.score == 0 and len(result.failed_examples) < 10:
+                    result.failed_examples.append({
+                        "vulnerability": tc.vulnerability if hasattr(tc, "vulnerability") else "Unknown",
+                        "attack_type": tc.vulnerability_type if hasattr(tc, "vulnerability_type") else "Unknown",
+                        "input": (tc.input[:500] if hasattr(tc, "input") and tc.input else ""),
+                        "output": (tc.actual_output[:500] if hasattr(tc, "actual_output") and tc.actual_output else ""),
+                    })
 
         return result
 
