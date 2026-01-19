@@ -212,10 +212,10 @@ class RedTeamEvaluator:
             evaluation_model = "gemini/gemini-1.5-flash"
             print("[INFO] Using Gemini for attack simulation and evaluation")
         elif os.environ.get("OPENAI_API_KEY"):
-            # Use gpt-3.5-turbo which is widely available
-            simulator_model = "gpt-3.5-turbo"
-            evaluation_model = "gpt-3.5-turbo"
-            print("[INFO] Using OpenAI gpt-3.5-turbo for attack simulation and evaluation")
+            # Use gpt-4 which is available in most accounts
+            simulator_model = "gpt-4"
+            evaluation_model = "gpt-4"
+            print("[INFO] Using OpenAI gpt-4 for attack simulation and evaluation")
         else:
             raise RuntimeError(
                 "No API key found for attack simulation. "
@@ -242,22 +242,6 @@ class RedTeamEvaluator:
             config=self.config,
         )
 
-        # Debug: Print raw risk_assessment structure
-        print(f"\n[DEBUG] risk_assessment type: {type(risk_assessment)}")
-        print(f"[DEBUG] risk_assessment attributes: {dir(risk_assessment)}")
-        if hasattr(risk_assessment, "test_cases") and risk_assessment.test_cases:
-            print(f"[DEBUG] Number of test_cases: {len(risk_assessment.test_cases)}")
-            if risk_assessment.test_cases:
-                tc = risk_assessment.test_cases[0]
-                print(f"[DEBUG] First test_case type: {type(tc)}")
-                print(f"[DEBUG] First test_case attributes: {dir(tc)}")
-                print(f"[DEBUG] First test_case dict: {tc.__dict__ if hasattr(tc, '__dict__') else 'no __dict__'}")
-                # Check for error field
-                if hasattr(tc, "error"):
-                    print(f"[DEBUG] First test_case error: {tc.error}")
-                if hasattr(tc, "score"):
-                    print(f"[DEBUG] First test_case score: {tc.score}")
-
         # Access results via risk_assessment.overview.vulnerability_type_results
         if hasattr(risk_assessment, "overview") and risk_assessment.overview:
             for vuln_result in risk_assessment.overview.vulnerability_type_results:
@@ -281,9 +265,15 @@ class RedTeamEvaluator:
         if hasattr(risk_assessment, "test_cases") and risk_assessment.test_cases:
             for tc in risk_assessment.test_cases:
                 if tc.score == 0 and len(result.failed_examples) < 10:
+                    # Convert enum to string for JSON serialization
+                    attack_type = "Unknown"
+                    if hasattr(tc, "vulnerability_type") and tc.vulnerability_type:
+                        vt = tc.vulnerability_type
+                        attack_type = vt.value if hasattr(vt, "value") else str(vt)
+
                     result.failed_examples.append({
                         "vulnerability": tc.vulnerability if hasattr(tc, "vulnerability") else "Unknown",
-                        "attack_type": tc.vulnerability_type if hasattr(tc, "vulnerability_type") else "Unknown",
+                        "attack_type": attack_type,
                         "input": (tc.input[:500] if hasattr(tc, "input") and tc.input else ""),
                         "output": (tc.actual_output[:500] if hasattr(tc, "actual_output") and tc.actual_output else ""),
                     })
