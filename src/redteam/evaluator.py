@@ -6,7 +6,11 @@ from datetime import datetime, timezone
 from enum import Enum
 
 from deepteam import red_team
-from deepteam.attacks.multi_turn import Crescendo, LinearJailbreak, TreeJailbreak
+from deepteam.attacks.multi_turn import (
+    CrescendoJailbreaking,
+    LinearJailbreaking,
+    TreeJailbreaking,
+)
 from deepteam.attacks.single_turn import Leetspeak, MathProblem, PromptInjection, ROT13
 from deepteam.vulnerabilities import (
     Bias,
@@ -157,9 +161,9 @@ def get_attacks(config: EvaluationConfig):
 
     if config.enable_multi_turn:
         attacks.extend([
-            LinearJailbreak(),
-            TreeJailbreak(),
-            Crescendo(),
+            LinearJailbreaking(),
+            TreeJailbreaking(),
+            CrescendoJailbreaking(),
         ])
 
     return attacks
