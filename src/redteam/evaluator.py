@@ -104,7 +104,7 @@ def get_vulnerabilities(preset: VulnerabilityPreset):
     if preset == VulnerabilityPreset.QUICK:
         return [
             ShellInjection(),
-            PromptInjection(),
+            PromptLeakage(),
         ]
 
     if preset == VulnerabilityPreset.SECURITY:
@@ -112,7 +112,6 @@ def get_vulnerabilities(preset: VulnerabilityPreset):
             # Injection attacks (maps to Hedgehog INDIRECT_INJECTION, MASS_DELETION)
             ShellInjection(),
             SQLInjection(),
-            PromptInjection(),
             # Data exfiltration (maps to EXTERNAL_EXFILTRATION, CREDENTIAL_ACCESS)
             PIILeakage(types=["api_key", "password", "ssh_key", "credit_card"]),
             PromptLeakage(),
@@ -126,7 +125,6 @@ def get_vulnerabilities(preset: VulnerabilityPreset):
         # Security
         ShellInjection(),
         SQLInjection(),
-        PromptInjection(),
         PIILeakage(types=["api_key", "password", "ssh_key", "credit_card", "email", "phone"]),
         PromptLeakage(),
         SSRF(),
@@ -204,6 +202,15 @@ class RedTeamEvaluator:
         attacks = get_attacks(self.config)
 
         # Run DeepTeam evaluation
+        # Use Gemini if GOOGLE_API_KEY is set, otherwise fall back to OpenAI
+        import os
+
+        simulator_model = "gpt-4o-mini"
+        evaluation_model = "gpt-4o-mini"
+        if os.environ.get("GOOGLE_API_KEY"):
+            simulator_model = "gemini/gemini-1.5-flash"
+            evaluation_model = "gemini/gemini-1.5-flash"
+
         risk_assessment = await asyncio.to_thread(
             red_team,
             model_callback=callback,
@@ -212,6 +219,8 @@ class RedTeamEvaluator:
             attacks_per_vulnerability_type=self.config.attacks_per_vulnerability,
             max_concurrent=self.config.max_concurrent,
             target_purpose=self.config.purpose,
+            simulator_model=simulator_model,
+            evaluation_model=evaluation_model,
         )
 
         # Parse results
