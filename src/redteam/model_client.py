@@ -239,6 +239,8 @@ def create_model_callback(
     models_response.raise_for_status()
     model_name = models_response.json()["data"][0]["id"]
 
+    call_count = [0]  # Use list to allow mutation in closure
+
     def model_callback(input_text: str, turns: list | None = None) -> str:
         """DeepTeam model callback (sync).
 
@@ -246,6 +248,8 @@ def create_model_callback(
             input_text: The current input/prompt
             turns: Optional list of previous conversation turns for multi-turn attacks
         """
+        call_count[0] += 1
+
         # Build messages list
         messages = []
 
@@ -260,18 +264,29 @@ def create_model_callback(
         # Add current input
         messages.append({"role": "user", "content": input_text})
 
-        response = requests.post(
-            f"{base_url}/v1/chat/completions",
-            json={
-                "model": model_name,
-                "messages": messages,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-            },
-            timeout=120,
-        )
-        response.raise_for_status()
-        data = response.json()
-        return data["choices"][0]["message"]["content"]
+        try:
+            response = requests.post(
+                f"{base_url}/v1/chat/completions",
+                json={
+                    "model": model_name,
+                    "messages": messages,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                },
+                timeout=120,
+            )
+            response.raise_for_status()
+            data = response.json()
+            result = data["choices"][0]["message"]["content"]
+
+            # Log first few calls for debugging
+            if call_count[0] <= 3:
+                print(f"[CALLBACK #{call_count[0]}] Input: {input_text[:100]}...")
+                print(f"[CALLBACK #{call_count[0]}] Response: {result[:100]}...")
+
+            return result
+        except Exception as e:
+            print(f"[CALLBACK ERROR] Call #{call_count[0]}: {e}")
+            raise
 
     return model_callback
